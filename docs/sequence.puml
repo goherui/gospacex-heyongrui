@@ -1,0 +1,47 @@
+@startuml
+title 电商订单超时自动关单流程
+
+actor User
+participant "Order Service" as Order
+participant "Message Queue" as MQ
+participant "Inventory Service" as Inventory
+participant "Timeout Checker" as Checker
+
+User -> Order: 创建订单请求
+activate Order
+Order -> Inventory: 扣减库存 (锁定库存)
+activate Inventory
+Inventory --> Order: 库存扣减成功
+deactivate Inventory
+
+Order -> Order: 创建订单 (状态: pending)
+Order -> MQ: 发送延迟消息 (TTL=30分钟)
+note right of MQ: 消息在30分钟后进入死信队列
+
+alt 用户在30分钟内支付成功
+    User -> Order: 支付回调
+    activate Order
+    Order -> Order: 更新订单状态为 paid
+    Order -> MQ: 取消对应的延迟消息 (可选)
+    deactivate Order
+else 30分钟内未支付
+    MQ -> Checker: 延迟消息进入死信队列
+    activate Checker
+    Checker -> Order: 查询超时订单
+    activate Order
+    Order --> Checker: 返回pending订单
+    deactivate Order
+    
+    Checker -> Order: 关闭订单 (状态: cancelled)
+    activate Order
+    Order -> Inventory: 回滚库存 (释放锁定库存)
+    activate Inventory
+    Inventory --> Order: 库存回滚成功
+    deactivate Inventory
+    
+    Order --> Checker: 订单关闭成功
+    deactivate Order
+    deactivate Checker
+end
+
+@enduml

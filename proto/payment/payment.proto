@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package stream;
+
+option go_package = "./";
+
+message PaymentReq {
+  int64 userId = 1;
+  int64 productId=2;
+  int64 quantity=3;
+}
+
+message PaymentResp {
+  int64 code = 1;
+  string msg=2;
+  string orderSn=3;
+  string url=4;
+}
+
+message PaymentNotifyRequest {
+  string order_sn = 1;
+}
+
+message PaymentNotifyResponse {
+  bool success = 1;
+  string message = 2;
+}
+service StreamGreeter {
+  rpc Payment(PaymentReq) returns (PaymentResp);
+  rpc HandlePaymentNotify(PaymentNotifyRequest) returns (PaymentNotifyResponse);
+}

@@ -1,0 +1,6 @@
+Nacos:
+  Addr: "115.190.54.31"
+  Port: 8848
+  Namespace: ""
+  DataID: "product-service.yaml"
+  Group: "DEFAULT_GROUP"
